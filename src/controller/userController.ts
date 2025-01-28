@@ -6,6 +6,10 @@ import { PrismaClient, user } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
+interface AuthenticatedRequest extends Request {
+  user?: any;
+}
+
 const signToken = (id: string): string => {
   return jwt.sign({ id }, process.env.JWT_ACCESS_TOKEN_SECRET!);
 };
@@ -115,10 +119,101 @@ export class userController {
 
       createToken(user, res);
     } catch (e) {
-      console.log(e);
       res.status(StatusCode.INTERNAL_SERVER_ERROR).json({
         status: "failed",
         msg: "Unable to login, please try again later!",
+      });
+    }
+  }
+
+  static async uploadAvatar(req: AuthenticatedRequest, res: Response) {
+    try {
+      const user = await prisma.user.findUnique({
+        where: { id: req.user.id },
+      });
+
+      if (!user) {
+        res.status(StatusCode.NOT_FOUND).json({
+          status: "failed",
+          msg: "User not found",
+        });
+        return;
+      }
+
+      const files = req.files as { [fieldName: string]: Express.Multer.File[] };
+
+      const avatarFile = files.avatar;
+
+      if (!avatarFile || avatarFile.length === 0) {
+        res.status(StatusCode.BAD_REQUEST).json({
+          status: "error",
+          msg: "Avatar is required",
+        });
+        return;
+      }
+
+      const file = avatarFile[0];
+      const image_url = `/uploads/${file.filename}`;
+
+      if (file) {
+        await prisma.user.update({
+          where: {
+            id: user.id,
+          },
+          data: {
+            user_image: image_url,
+          },
+        });
+
+        res.status(StatusCode.OK).json({
+          status: "success",
+          user,
+        });
+      } else {
+        res.status(StatusCode.BAD_REQUEST).json({
+          status: "failed",
+          msg: "No file uploaded",
+        });
+      }
+    } catch (e) {
+      res.status(StatusCode.INTERNAL_SERVER_ERROR).json({
+        status: "failed",
+        msg: "Unable to upload the avatar, please try again later!",
+      });
+    }
+  }
+
+  static async removeAvatar(req: AuthenticatedRequest, res: Response) {
+    try {
+      const user = await prisma.user.findUnique({
+        where: { id: req.user.id },
+      });
+
+      if (!user) {
+        res.status(StatusCode.NOT_FOUND).json({
+          status: "failed",
+          msg: "User not found",
+        });
+        return;
+      }
+
+      await prisma.user.update({
+        where: {
+          id: user.id,
+        },
+        data: {
+          user_image: undefined,
+        },
+      });
+
+      res.status(StatusCode.OK).json({
+        status: "success",
+        user,
+      });
+    } catch (e) {
+      res.status(StatusCode.INTERNAL_SERVER_ERROR).json({
+        status: "failed",
+        msg: "Unable to remove the avatar, please try again later!",
       });
     }
   }
