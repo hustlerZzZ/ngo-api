@@ -1,0 +1,87 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model user {
+  id          Int          @id @default(autoincrement())
+  name        String?
+  password    String
+  email       String       @unique
+  is_verified Boolean      @default(false)
+  created_at  DateTime     @default(now())
+  user_image  user_image[]
+}
+
+model user_image {
+  id         Int      @id @default(autoincrement())
+  image_url  String
+  user_id    Int
+  created_at DateTime @default(now())
+  user       user     @relation(fields: [user_id], references: [id])
+
+  @@unique([image_url, user_id])
+}
+
+model blog {
+  id         Int           @id @default(autoincrement())
+  title      String
+  content    String
+  images     blog_images[]
+  created_at DateTime      @default(now())
+  updated_at DateTime      @updatedAt
+}
+
+model blog_images {
+  id         Int      @id @default(autoincrement())
+  image_url  String
+  blog_id    Int
+  blog       blog     @relation(fields: [blog_id], references: [id], onDelete: Cascade)
+  created_at DateTime @default(now())
+}
+
+model story {
+  id           Int            @id @default(autoincrement())
+  title        String
+  page_url     String
+  story_images story_images[]
+  created_at   DateTime       @default(now())
+}
+
+model story_images {
+  id         Int      @id @default(autoincrement())
+  image_url  String
+  story_id   Int
+  story      story    @relation(fields: [story_id], references: [id], onDelete: Cascade)
+  created_at DateTime @default(now())
+}
+
+model volunteer_form {
+  id           Int      @id @default(autoincrement())
+  name         String
+  email        String
+  phone_number String
+  address      String
+  state        String
+  country      String
+  zip_code     String
+  message      String?
+  created_at   DateTime @default(now())
+
+  @@index([email])
+}
+
+model contact_form {
+  id         Int      @id @default(autoincrement())
+  name       String
+  email      String
+  subject    String
+  message    String
+  created_at DateTime @default(now())
+
+  @@index([email])
+}
