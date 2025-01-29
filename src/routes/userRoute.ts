@@ -4,7 +4,7 @@ import upload from "../middleware/upload";
 import { userController } from "../controller/userController";
 import { authController } from "../controller/authController";
 
-router.get("/sign-in", userController.userLogin);
+router.post("/sign-in", userController.userLogin);
 router.post("/register", userController.userRegistration);
 router.post(
   "/upload-avatar",
@@ -17,5 +17,6 @@ router.delete(
   authController.protect,
   userController.removeAvatar,
 );
+router.get("/verify-token", userController.verify);
 
 export default router;

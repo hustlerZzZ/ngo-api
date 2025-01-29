@@ -8,7 +8,6 @@ export class blogController {
   static async createBlog(req: Request, res: Response) {
     try {
       const { title, content } = req.body;
-
       if (!title || !content) {
         res.status(StatusCode.BAD_REQUEST).json({
           status: "error",

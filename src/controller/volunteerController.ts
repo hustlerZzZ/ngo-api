@@ -68,6 +68,7 @@ export class volunteerController {
         allVolunteerForms,
       });
     } catch (e) {
+      console.log(e);
       res.status(StatusCode.INTERNAL_SERVER_ERROR).json({
         status: "failed",
         msg: "Unable to get all the volunteer form's, please try again later!",

@@ -20,7 +20,7 @@ model user {
 model blog {
   id         Int           @id @default(autoincrement())
   title      String
-  content    String
+  content    String        @db.Text
   images     blog_images[]
   created_at DateTime      @default(now())
   updated_at DateTime      @updatedAt
