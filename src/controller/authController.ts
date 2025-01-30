@@ -1,8 +1,8 @@
 import { promisify } from "util";
 import { StatusCode } from "../utils/statusCodes";
 import { PrismaClient, user } from "@prisma/client";
-import { Request, Response, NextFunction } from "express";
 import jwt, { VerifyOptions } from "jsonwebtoken";
+import { Request, Response, NextFunction } from "express";
 
 const prisma = new PrismaClient();
 

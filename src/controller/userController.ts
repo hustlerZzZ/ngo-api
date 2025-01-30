@@ -29,6 +29,7 @@ const createToken = (user: user, res: Response) => {
     status: "success",
     user: {
       id: user.id,
+      name: user.name,
       email: user.email,
       image_url: user.user_image,
     },
@@ -281,6 +282,125 @@ export class userController {
       res.status(StatusCode.INTERNAL_SERVER_ERROR).json({
         status: "failed",
         msg: "Unable to remove the avatar, please try again later!",
+      });
+    }
+  }
+
+  static async updateUser(req: Request, res: Response) {
+    try {
+      const { name, email } = req.body;
+
+      if (!name || !email) {
+        res.status(StatusCode.BAD_REQUEST).json({
+          status: "failed",
+          msg: "Kindly send all the required fields",
+        });
+        return;
+      }
+
+      const existingUser = await prisma.user.findUnique({
+        where: {
+          email,
+        },
+      });
+
+      if (!existingUser) {
+        res.status(StatusCode.NOT_FOUND).json({
+          status: "failed",
+          msg: "User not found",
+        });
+        return;
+      }
+
+      await prisma.user.update({
+        where: {
+          id: existingUser.id,
+        },
+        data: {
+          name,
+          email,
+        },
+      });
+
+      res.status(StatusCode.OK).json({
+        status: "success",
+        msg: "Successfully updated",
+      });
+    } catch (e) {
+      res.status(StatusCode.INTERNAL_SERVER_ERROR).json({
+        status: "failed",
+        msg: "Unable to update the user, kindly try again later!",
+      });
+    }
+  }
+
+  static async updatePassword(req: AuthenticatedRequest, res: Response) {
+    try {
+      const { old_password, new_password } = req.body;
+
+      if (!old_password || !new_password) {
+        res.status(StatusCode.BAD_REQUEST).json({
+          status: "failed",
+          msg: "Kindly send all the required fields",
+        });
+        return;
+      }
+
+      const isPasswordValid = await bcrypt.compare(
+        new_password,
+        req.user.password,
+      );
+
+      if (!isPasswordValid) {
+        res.status(StatusCode.BAD_REQUEST).json({
+          status: "failed",
+          msg: "User does not match the old password",
+        });
+        return;
+      }
+
+      const newHashedPass = await bcrypt.hash(new_password, 10);
+
+      await prisma.user.update({
+        where: {
+          id: +req.user.id,
+        },
+        data: {
+          password: newHashedPass,
+        },
+      });
+
+      res.status(StatusCode.OK).json({
+        status: "success",
+        msg: "Successfully updated the password",
+      });
+    } catch (e) {
+      res.status(StatusCode.INTERNAL_SERVER_ERROR).json({
+        status: "failed",
+        msg: "Unable to update the password, kindly try again later!",
+      });
+    }
+  }
+
+  static async updateAvatar(req: AuthenticatedRequest, res: Response) {
+    try {
+      const user = await prisma.user.findUnique({
+        where: { id: +req.user.id },
+      });
+
+      if (!user) {
+        res.status(StatusCode.BAD_REQUEST).json({
+          status: "failed",
+          msg: "Unable to find the user!",
+        });
+      }
+
+
+
+    } catch (e) {
+      res.status(StatusCode.INTERNAL_SERVER_ERROR).json({
+        status: "failed",
+        msg: "Unable to update the avatar, kindly try again later!",
       });
     }
   }

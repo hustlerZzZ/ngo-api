@@ -18,5 +18,16 @@ router.delete(
   userController.removeAvatar,
 );
 router.get("/verify-token", userController.verify);
+router.put("/update-me", authController.protect, userController.updateUser);
+router.put(
+  "/update-password",
+  authController.protect,
+  userController.updatePassword,
+);
+router.put(
+  "update-avatar",
+  authController.protect,
+  userController.updateAvatar,
+);
 
 export default router;
