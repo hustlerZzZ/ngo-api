@@ -346,15 +346,25 @@ export class userController {
         return;
       }
 
-      const isPasswordValid = await bcrypt.compare(
-        new_password,
-        req.user.password,
-      );
+      const user = await prisma.user.findUnique({
+        where: { id: req.user.id },
+        select: { password: true },
+      });
+
+      if (!user) {
+        res.status(StatusCode.NOT_FOUND).json({
+          status: "failed",
+          msg: "User not found",
+        });
+        return;
+      }
+
+      const isPasswordValid = await bcrypt.compare(old_password, user.password);
 
       if (!isPasswordValid) {
         res.status(StatusCode.BAD_REQUEST).json({
           status: "failed",
-          msg: "User does not match the old password",
+          msg: "Incorrect old password",
         });
         return;
       }
@@ -362,23 +372,21 @@ export class userController {
       const newHashedPass = await bcrypt.hash(new_password, 10);
 
       await prisma.user.update({
-        where: {
-          id: +req.user.id,
-        },
-        data: {
-          password: newHashedPass,
-        },
+        where: { id: req.user.id },
+        data: { password: newHashedPass },
       });
 
       res.status(StatusCode.OK).json({
         status: "success",
         msg: "Successfully updated the password",
       });
-    } catch (e) {
+    } catch (error) {
+      console.error("Error updating password:", error);
       res.status(StatusCode.INTERNAL_SERVER_ERROR).json({
         status: "failed",
         msg: "Unable to update the password, kindly try again later!",
       });
+      return;
     }
   }
 
@@ -394,9 +402,6 @@ export class userController {
           msg: "Unable to find the user!",
         });
       }
-
-
-
     } catch (e) {
       res.status(StatusCode.INTERNAL_SERVER_ERROR).json({
         status: "failed",

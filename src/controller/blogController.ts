@@ -17,7 +17,7 @@ export class blogController {
       }
 
       const files = req.files as { [fieldName: string]: Express.Multer.File[] };
-      const images = files?.images
+      const images = files?.blog
         ? files.images.map((file) => `/uploads/${file.filename}`)
         : [];
 
@@ -70,6 +70,35 @@ export class blogController {
       res.status(StatusCode.INTERNAL_SERVER_ERROR).json({
         status: "failed",
         msg: "Unable to get all the blogs, please try again later!",
+      });
+    }
+  }
+
+  static async getBlog(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+
+      const existingBlog = await prisma.blog.findUnique({
+        where: { id: +id },
+        include: { images: {} },
+      });
+
+      if (!existingBlog) {
+        res.status(StatusCode.BAD_REQUEST).json({
+          status: "error",
+          msg: "Unable to find the blog",
+        });
+        return;
+      }
+
+      res.status(StatusCode.OK).json({
+        status: "success",
+        blog: existingBlog,
+      });
+    } catch (e) {
+      res.status(StatusCode.INTERNAL_SERVER_ERROR).json({
+        status: "failed",
+        msg: "Unable to find the blog, please try again later!",
       });
     }
   }

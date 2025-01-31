@@ -13,6 +13,8 @@ router.post(
 
 router.get("/get-all-blogs", blogController.getAllBlogs);
 
+router.get("/get-blog/:id", blogController.getBlog);
+
 router.delete(
   "/delete-blog/:id",
   authController.protect,
