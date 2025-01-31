@@ -15,7 +15,7 @@ const app = express();
 
 // Allowing Cors
 const corsConfig: CorsOptions = {
-  origin: ["https://admin.hungertohope.org/","https://hungertohope.org/", "http://localhost:5173"],
+  origin: ["https://admin.hungertohope.org/","https://hungertohope.org/"],
   credentials: true,
   optionsSuccessStatus: 200,
 };
