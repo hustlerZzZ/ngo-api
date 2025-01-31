@@ -15,10 +15,21 @@ const app = express();
 
 // Allowing Cors
 const corsConfig: CorsOptions = {
-  origin: ["https://admin.hungertohope.org/","https://hungertohope.org/"],
+  origin: (origin, callback) => {
+    const allowedOrigins = [
+      "https://admin.hungertohope.org",
+      "https://hungertohope.org",
+    ];
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
   credentials: true,
   optionsSuccessStatus: 200,
 };
+
 
 app.use(cors(corsConfig));
 
