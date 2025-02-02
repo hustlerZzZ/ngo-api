@@ -1,5 +1,5 @@
 import bcrypt from "bcrypt";
-import jwt, { VerifyOptions } from "jsonwebtoken";
+import jwt, {JwtPayload, VerifyOptions} from "jsonwebtoken";
 import { Request, Response } from "express";
 import { StatusCode } from "../utils/statusCodes";
 import { PrismaClient, user } from "@prisma/client";
@@ -19,7 +19,7 @@ const createToken = (user: user, res: Response) => {
   const token = signToken(`${user.id as number}`);
 
   res.cookie("jwt", token, {
-    httpOnly: true,
+    httpOnly: false,
     secure: true,
     sameSite: "none",
     maxAge: 24 * 60 * 60 * 1000, // 1 day
@@ -143,56 +143,56 @@ export class userController {
       token = req.headers.authorization.split(" ")[1];
     }
 
+    if (!token && req.cookies?.jwt) {
+      token = req.cookies.jwt;
+    }
+
     if (!token) {
-      res.status(StatusCode.FAILED).json({
+      return res.status(401).json({
         status: "failed",
         msg: "You are not logged in! Please log in to get access.",
       });
-      return;
     }
 
-    const verifyAsync = promisify<
-      string,
-      jwt.Secret,
-      VerifyOptions,
-      jwt.JwtPayload
-    >(jwt.verify);
-
-    let decoded: { id: string } | undefined;
     try {
-      decoded = (await verifyAsync(
+      const verifyAsync = promisify<
+        string,
+        jwt.Secret,
+        VerifyOptions,
+        JwtPayload
+      >(jwt.verify);
+
+      const decoded = (await verifyAsync(
         token,
         process.env.JWT_ACCESS_TOKEN_SECRET!,
         {},
-      )) as {
-        id: string;
-      };
+      )) as { id: string };
+
+      const userId = Number(decoded.id);
+
+      const currentUser = await prisma.user.findUnique({
+        where: { id: userId },
+      });
+
+      if (!currentUser) {
+        return res.status(401).json({
+          status: "failed",
+          msg: "The user belonging to this token does not exist. Please try again.",
+        });
+      }
+
+      (req as any).user = currentUser;
+
+      return res.status(200).json({
+        status: "success",
+        currentUser,
+      });
     } catch (err) {
-      res.status(StatusCode.FAILED).json({
+      return res.status(401).json({
         status: "failed",
         msg: "Invalid token",
       });
-      return;
     }
-
-    const currentUser = await prisma.user.findUnique({
-      where: { id: +decoded.id },
-    });
-
-    if (!currentUser) {
-      res.status(StatusCode.FAILED).json({
-        status: "failed",
-        msg: "The user belonging to this token does not exist. Please try again.",
-      });
-    }
-
-    (req as any).user = currentUser;
-
-    res.status(StatusCode.SUCCESS).json({
-      status: "success",
-      currentUser,
-    });
-    return;
   }
 
   static async uploadAvatar(req: AuthenticatedRequest, res: Response) {
