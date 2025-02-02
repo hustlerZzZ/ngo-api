@@ -18,10 +18,11 @@ export class authController {
     }
 
     if (!token) {
-      return res.status(StatusCode.FAILED).json({
+      res.status(StatusCode.FAILED).json({
         status: "failed",
         msg: "You are not logged in! Please log in to get access.",
       });
+      return;
     }
 
     try {
