@@ -1,5 +1,5 @@
 import bcrypt from "bcrypt";
-import jwt, {JwtPayload, VerifyOptions} from "jsonwebtoken";
+import jwt, { JwtPayload, VerifyOptions } from "jsonwebtoken";
 import { Request, Response } from "express";
 import { StatusCode } from "../utils/statusCodes";
 import { PrismaClient, user } from "@prisma/client";
@@ -148,10 +148,11 @@ export class userController {
     }
 
     if (!token) {
-      return res.status(401).json({
+      res.status(401).json({
         status: "failed",
         msg: "You are not logged in! Please log in to get access.",
       });
+      return;
     }
 
     try {
@@ -175,23 +176,25 @@ export class userController {
       });
 
       if (!currentUser) {
-        return res.status(401).json({
+        res.status(401).json({
           status: "failed",
           msg: "The user belonging to this token does not exist. Please try again.",
         });
+        return;
       }
 
       (req as any).user = currentUser;
 
-      return res.status(200).json({
+      res.status(200).json({
         status: "success",
         currentUser,
       });
     } catch (err) {
-      return res.status(401).json({
+      res.status(401).json({
         status: "failed",
         msg: "Invalid token",
       });
+      return;
     }
   }
 
