@@ -1,7 +1,6 @@
-import { promisify } from "util";
+import { PrismaClient } from "@prisma/client";
+import jwt, { JwtPayload } from "jsonwebtoken";
 import { StatusCode } from "../utils/statusCodes";
-import { PrismaClient, user } from "@prisma/client";
-import jwt, { VerifyOptions } from "jsonwebtoken";
 import { Request, Response, NextFunction } from "express";
 
 const prisma = new PrismaClient();
@@ -10,37 +9,49 @@ export class authController {
   static async protect(req: Request, res: Response, next: NextFunction) {
     let token: string | undefined;
 
-    if (
-      req.headers.authorization &&
-      req.headers.authorization.startsWith("Bearer")
-    ) {
+    if (req.headers.authorization?.startsWith("Bearer")) {
       token = req.headers.authorization.split(" ")[1];
     }
 
     if (!token) {
-      res.status(StatusCode.FAILED).json({
+      token = req.cookies.jwt;
+    }
+
+    if (!token) {
+      return res.status(StatusCode.FAILED).json({
         status: "failed",
         msg: "You are not logged in! Please log in to get access.",
       });
-      return;
     }
 
-    const verifyAsync = promisify<
-      string,
-      jwt.Secret,
-      VerifyOptions,
-      jwt.JwtPayload
-    >(jwt.verify);
-
-    let decoded: { id: string } | undefined;
     try {
-      decoded = (await verifyAsync(
+      const decoded = jwt.verify(
         token,
         process.env.JWT_ACCESS_TOKEN_SECRET!,
-        {},
-      )) as {
-        id: string;
-      };
+      ) as JwtPayload;
+
+      if (!decoded.id) {
+        res.status(StatusCode.FAILED).json({
+          status: "failed",
+          msg: "Token error! Please try again.",
+        });
+        return;
+      }
+
+      const currentUser = await prisma.user.findUnique({
+        where: { id: +decoded.id },
+      });
+
+      if (!currentUser) {
+        res.status(StatusCode.FAILED).json({
+          status: "failed",
+          msg: "The user belonging to this token does not exist. Please try again.",
+        });
+        return;
+      }
+
+      (req as any).user = currentUser;
+      next();
     } catch (err) {
       res.status(StatusCode.FAILED).json({
         status: "failed",
@@ -48,20 +59,5 @@ export class authController {
       });
       return;
     }
-
-    const currentUser = await prisma.user.findUnique({
-      where: { id: +decoded.id },
-    });
-
-    if (!currentUser) {
-      res.status(StatusCode.FAILED).json({
-        status: "failed",
-        msg: "The user belonging to this token does not exist. Please try again.",
-      });
-    }
-
-    (req as any).user = currentUser;
-
-    next();
   }
 }

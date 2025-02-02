@@ -19,7 +19,7 @@ const createToken = (user: user, res: Response) => {
   const token = signToken(`${user.id as number}`);
 
   res.cookie("jwt", token, {
-    httpOnly: false,
+    httpOnly: true,
     secure: true,
     sameSite: "none",
     maxAge: 24 * 60 * 60 * 1000, // 1 day
